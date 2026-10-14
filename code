@@ -1,0 +1,213 @@
+Here is your **same Tic-Tac-Toe code using Minimax with Alpha-Beta Pruning**, properly aligned with corrected indentation and syntax errors. The logic remains unchanged.
+
+Save it as `tictactoe_minimax.py`.
+
+```python
+"""Unbeatable Tic-Tac-Toe using Minimax with Alpha-Beta Pruning.
+
+Run with: python tictactoe_minimax.py
+"""
+
+import math
+
+WIN_LINES = [
+    (0, 1, 2), (3, 4, 5), (6, 7, 8),
+    (0, 3, 6), (1, 4, 7), (2, 5, 8),
+    (0, 4, 8), (2, 4, 6)
+]
+
+
+def winner(board):
+    """Return 'X' or 'O' if a player has three in a row, else None."""
+    for a, b, c in WIN_LINES:
+        if board[a] != " " and board[a] == board[b] == board[c]:
+            return board[a]
+    return None
+
+
+def moves(board):
+    """Return the list of empty cell indices (0-8)."""
+    return [i for i, cell in enumerate(board) if cell == " "]
+
+
+def evaluate(board, ai, human, depth):
+    """Score a finished game from the AI's point of view (None if not over)."""
+    w = winner(board)
+
+    if w == ai:
+        return 10 - depth          # Faster wins score higher
+    if w == human:
+        return depth - 10          # Slower losses score higher
+    if not moves(board):
+        return 0                   # Draw
+
+    return None
+
+
+def minimax(board, depth, is_max, ai, human, stats):
+    """Plain Minimax: explores every possible game."""
+    stats[0] += 1
+
+    score = evaluate(board, ai, human, depth)
+    if score is not None:
+        return score
+
+    best = -math.inf if is_max else math.inf
+
+    for m in moves(board):
+        board[m] = ai if is_max else human
+
+        value = minimax(
+            board, depth + 1, not is_max, ai, human, stats
+        )
+
+        board[m] = " "
+
+        best = max(best, value) if is_max else min(best, value)
+
+    return best
+
+
+def alphabeta(board, depth, alpha, beta, is_max, ai, human, stats):
+    """Minimax with Alpha-Beta pruning: skips branches that cannot matter."""
+    stats[0] += 1
+
+    score = evaluate(board, ai, human, depth)
+    if score is not None:
+        return score
+
+    if is_max:
+        best = -math.inf
+
+        for m in moves(board):
+            board[m] = ai
+
+            best = max(
+                best,
+                alphabeta(
+                    board, depth + 1, alpha, beta,
+                    False, ai, human, stats
+                )
+            )
+
+            board[m] = " "
+            alpha = max(alpha, best)
+
+            if beta <= alpha:      # Prune: MIN will never allow this branch
+                break
+
+        return best
+
+    best = math.inf
+
+    for m in moves(board):
+        board[m] = human
+
+        best = min(
+            best,
+            alphabeta(
+                board, depth + 1, alpha, beta,
+                True, ai, human, stats
+            )
+        )
+
+        board[m] = " "
+        beta = min(beta, best)
+
+        if beta <= alpha:          # Prune: MAX already has a better option
+            break
+
+    return best
+
+
+def best_move(board, ai, human, use_pruning=True):
+    """Return (best_cell, nodes_explored) for the AI."""
+    stats = [0]
+
+    best_score, choice = -math.inf, None
+    alpha, beta = -math.inf, math.inf
+
+    for m in moves(board):
+        board[m] = ai
+
+        if use_pruning:
+            score = alphabeta(
+                board, 1, alpha, beta, False, ai, human, stats
+            )
+        else:
+            score = minimax(
+                board, 1, False, ai, human, stats
+            )
+
+        board[m] = " "
+
+        if score > best_score:
+            best_score, choice = score, m
+
+        alpha = max(alpha, best_score)
+
+    return choice, stats[0]
+
+
+def show(board):
+    rows = [
+        " " + " | ".join(board[r * 3:r * 3 + 3])
+        for r in range(3)
+    ]
+
+    print("\n" + "\n---+---+---\n".join(rows) + "\n")
+
+
+def main():
+    human = input("Choose your symbol (X moves first, O second): ").strip().upper()
+    human = human if human in ("X", "O") else "X"
+
+    ai = "O" if human == "X" else "X"
+    board = [" "] * 9
+    turn = "X"
+
+    print("Cells are numbered 1-9, left to right, top to bottom.")
+    show(board)
+
+    while True:
+        if turn == human:
+            cell = int(input("Your move (1-9): ")) - 1
+
+            if cell not in moves(board):
+                print("Invalid move, try again.")
+                continue
+
+            board[cell] = human
+
+        else:
+            cell, n_mm = best_move(
+                board, ai, human, use_pruning=False
+            )
+
+            _, n_ab = best_move(
+                board, ai, human, use_pruning=True
+            )
+
+            board[cell] = ai
+
+            print(
+                f"AI plays {cell + 1} "
+                f"(Minimax nodes: {n_mm}, Alpha-Beta nodes: {n_ab})"
+            )
+
+        show(board)
+
+        w = winner(board)
+
+        if w or not moves(board):
+            print(f"{w} wins!" if w else "It's a draw!")
+            break
+
+        turn = human if turn == ai else ai
+
+
+if __name__ == "__main__":
+    main()
+```
+
+**Note:** I corrected the indentation, line breaks, and the final `if __name__ == "__main__":` statement so the code runs correctly. The game logic is unchanged.
